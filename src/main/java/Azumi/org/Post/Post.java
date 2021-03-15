@@ -15,7 +15,6 @@ public class Post {
     private int userId;
 
     @Id
-    @GeneratedValue (strategy = GenerationType.IDENTITY)
     @Column(name = "id")
     private int postId;
 

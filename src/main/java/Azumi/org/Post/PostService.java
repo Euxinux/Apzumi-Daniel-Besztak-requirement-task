@@ -2,6 +2,8 @@ package Azumi.org.Post;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.json.JSONArray;
+import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -89,6 +91,27 @@ public class PostService {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 
     }
+
+    @GetMapping("/rest")
+    public ResponseEntity update(){
+        JSON json = new JSON();
+        StringBuffer sb = json.updateDB();
+
+        JSONArray posts = new JSONArray(sb.toString());
+
+            for (int i = 0; i <posts.length(); i++ ) {
+                JSONObject post = posts.getJSONObject(i);
+                int userId = post.getInt("userId");
+                int postId = post.getInt("id");
+                String title = post.getString("title");
+                String body = post.getString("body");
+                Post newPost = new Post(userId, postId, title, body);
+                postRepository.save(newPost);
+            }
+
+        return ResponseEntity.ok().build();
+    }
+
 
 
 }
