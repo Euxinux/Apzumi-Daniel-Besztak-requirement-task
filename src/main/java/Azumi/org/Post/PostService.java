@@ -7,6 +7,7 @@ import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -63,7 +64,7 @@ public class PostService {
         }
     }   
 
-    // edit postBody by author
+    //edit postBody by author
     @PutMapping("/posts/body/{id}")
     public ResponseEntity editPostBody(@RequestBody String newBody, @PathVariable("id") int idPost,
                                     @RequestHeader("userid") int userId) throws JsonProcessingException {
@@ -92,13 +93,18 @@ public class PostService {
 
     }
 
-    @GetMapping("/rest")
+    @PutMapping("/rest")
     public ResponseEntity update(){
+        period();
+        return ResponseEntity.ok().build();
+    }
+
+
+    @Scheduled(cron = "0 20 20 * * *")
+    public void period(){
         JSON json = new JSON();
         StringBuffer sb = json.updateDB();
-
         JSONArray posts = new JSONArray(sb.toString());
-
             for (int i = 0; i <posts.length(); i++ ) {
                 JSONObject post = posts.getJSONObject(i);
                 int userId = post.getInt("userId");
@@ -106,10 +112,17 @@ public class PostService {
                 String title = post.getString("title");
                 String body = post.getString("body");
                 Post newPost = new Post(userId, postId, title, body);
-                postRepository.save(newPost);
-            }
+                Optional<Post> byPostId = postRepository.findByPostId(newPost.getPostId());
+                if(byPostId.isPresent())
+                {
+                    if(byPostId.get().getPostTitle() != newPost.getPostTitle())
+                        newPost.setPostTitle(byPostId.get().getPostTitle());
+                    if(byPostId.get().getPostBody() != newPost.getPostBody())
+                        newPost.setPostBody(byPostId.get().getPostBody());
+                }
 
-        return ResponseEntity.ok().build();
+                    postRepository.save(newPost);
+            }
     }
 
 
