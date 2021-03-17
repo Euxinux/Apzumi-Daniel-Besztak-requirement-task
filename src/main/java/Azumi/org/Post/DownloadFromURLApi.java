@@ -13,8 +13,9 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.List;
 
-public class JSON {
+public class DownloadFromURLApi {
 
+    //method responsible for update DB from URL adress
     public StringBuffer updateDB() {
         StringBuffer sb = new StringBuffer();
         try {
@@ -28,7 +29,6 @@ public class JSON {
                 while ((line = br.readLine()) != null) {
                     sb.append(line);
                 }
-
             }
         } catch (Exception e) {
             System.out.println(e);

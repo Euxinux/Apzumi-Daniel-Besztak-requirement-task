@@ -1,5 +1,7 @@
 package Azumi.org.Post;
 
+import Azumi.org.Log.Logs;
+import Azumi.org.Log.LogsRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.json.JSONArray;
@@ -9,7 +11,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.web.bind.annotation.*;
-
 import java.util.List;
 import java.util.Optional;
 
@@ -18,16 +19,18 @@ public class PostService {
 
     @Autowired
     ObjectMapper objectMapper;
-
     @Autowired
     PostRepository postRepository;
+    @Autowired
+    LogsRepository logsRepository;
 
-     // display all posts
+    // display all posts
     @GetMapping("/posts")
-    public ResponseEntity displayPostsId () throws JsonProcessingException {
+    public ResponseEntity displayPostsId() throws JsonProcessingException {
         List<Post> allPosts = postRepository.findAll();
         return ResponseEntity.ok(objectMapper.writeValueAsString(allPosts));
     }
+
     // display posts by title
     @GetMapping("/posts/{postTitle}")
     public ResponseEntity displayPostsByTitle(@PathVariable("postTitle") String postTitle) throws JsonProcessingException {
@@ -40,91 +43,96 @@ public class PostService {
 
     // display all without author id
     @GetMapping("/posts/withoutId")
-    public ResponseEntity displayPostsWithoutId () throws JsonProcessingException {
+    public ResponseEntity displayPostsWithoutId() throws JsonProcessingException {
         List<PostsProjections> allPosts = postRepository.findAllPosts();
-       //List<Post> allPosts = postRepository.findAll();
-
         return ResponseEntity.ok(objectMapper.writeValueAsString(allPosts));
     }
 
     // edit posts Title by author
     @PutMapping("/posts/title/{id}")
     public ResponseEntity editPostTitle(@RequestBody String newTitle, @PathVariable("id") int idPost,
-                                    @RequestHeader("userid") int userId) throws JsonProcessingException {
+                                        @RequestHeader("userid") int userId) throws JsonProcessingException {
         Optional<Post> postById = postRepository.findByPostId(idPost);
 
-        if (postById.get().getUserId() == userId){
+        if (postById.get().getUserId() == userId) {
             Post editedPost;
             editedPost = postById.get();
             editedPost.setPostTitle(newTitle);
             postRepository.save(editedPost);
-            return ResponseEntity.ok(objectMapper.writeValueAsString(editedPost));
-        } else {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
-    }   
-
-    //edit postBody by author
-    @PutMapping("/posts/body/{id}")
-    public ResponseEntity editPostBody(@RequestBody String newBody, @PathVariable("id") int idPost,
-                                    @RequestHeader("userid") int userId) throws JsonProcessingException {
-        Optional<Post> postById = postRepository.findByPostId(idPost);
-
-        if (postById.get().getUserId() == userId){
-            Post editedPost;
-            editedPost = postById.get();
-            editedPost.setPostBody(newBody);
-            postRepository.save(editedPost);
+            logsRepository.save(new Logs(editedPost.getUserId(), editedPost.getPostId(), "EDIT TITLE"));
             return ResponseEntity.ok(objectMapper.writeValueAsString(editedPost));
         } else {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
     }
 
+    //edit postBody by author
+    @PutMapping("/posts/body/{id}")
+    public ResponseEntity editPostBody(@RequestBody String newBody, @PathVariable("id") int idPost,
+                                       @RequestHeader("userid") int userId) throws JsonProcessingException {
+        Optional<Post> postById = postRepository.findByPostId(idPost);
+
+        if (postById.get().getUserId() == userId) {
+            Post editedPost;
+            editedPost = postById.get();
+            editedPost.setPostBody(newBody);
+            postRepository.save(editedPost);
+            logsRepository.save(new Logs(editedPost.getUserId(), editedPost.getPostId(), "EDIT BODY"));
+            return ResponseEntity.ok(objectMapper.writeValueAsString(editedPost));
+        } else {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+    }
+
+    // update DB
+    @PutMapping("/rest")
+    public ResponseEntity update() {
+        period();
+        return ResponseEntity.ok().build();
+    }
+
     // delete post by author
     @DeleteMapping("/posts/{id}")
-    public ResponseEntity deletePost(@PathVariable("id") int idPost, @RequestHeader("userid") int userId){
+    public ResponseEntity deletePost(@PathVariable("id") int idPost, @RequestHeader("userid") int userId) {
         Optional<Post> postById = postRepository.findByPostId(idPost);
-        if (postById.get().getUserId() == userId){
+        if (postById.get().getUserId() == userId) {
             postRepository.delete(postById.get());
+            logsRepository.save(new Logs(postById.get().getUserId(), postById.get().getPostId(), "DELETE POST"));
             return ResponseEntity.ok().build();
         } else
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 
     }
 
-    @PutMapping("/rest")
-    public ResponseEntity update(){
-        period();
-        return ResponseEntity.ok().build();
-    }
 
 
-    @Scheduled(cron = "0 20 20 * * *")
-    public void period(){
-        JSON json = new JSON();
+    // automatic update DB at 20:00
+    @Scheduled(cron = "0 0 20 * * *")
+    public void period()    {
+        DownloadFromURLApi json = new DownloadFromURLApi();
         StringBuffer sb = json.updateDB();
         JSONArray posts = new JSONArray(sb.toString());
-            for (int i = 0; i <posts.length(); i++ ) {
-                JSONObject post = posts.getJSONObject(i);
-                int userId = post.getInt("userId");
-                int postId = post.getInt("id");
-                String title = post.getString("title");
-                String body = post.getString("body");
-                Post newPost = new Post(userId, postId, title, body);
-                Optional<Post> byPostId = postRepository.findByPostId(newPost.getPostId());
-                if(byPostId.isPresent())
-                {
-                    if(byPostId.get().getPostTitle() != newPost.getPostTitle())
-                        newPost.setPostTitle(byPostId.get().getPostTitle());
-                    if(byPostId.get().getPostBody() != newPost.getPostBody())
-                        newPost.setPostBody(byPostId.get().getPostBody());
+        for (int i = 0; i < posts.length(); i++) {
+            JSONObject post = posts.getJSONObject(i);
+            int userId = post.getInt("userId");
+            int postId = post.getInt("id");
+            String title = post.getString("title");
+            String body = post.getString("body");
+            Post newPost = new Post(userId, postId, title, body);
+            List<Logs> editTitle = logsRepository.findByIdAndActive(postId, "EDIT TITLE");
+            List<Logs> editBody = logsRepository.findByIdAndActive(postId, "EDIT BODY");
+            List<Logs> deletePost = logsRepository.findByIdAndActive(postId, "DELETE POST");
+            Optional<Post> byPostId = postRepository.findByPostId(postId);
+
+            if (deletePost.isEmpty()) {
+                if (!editTitle.isEmpty()) {
+                    newPost.setPostTitle(byPostId.get().getPostTitle());
                 }
-
-                    postRepository.save(newPost);
+                if (!editBody.isEmpty()) {
+                    newPost.setPostBody(byPostId.get().getPostBody());
+                }
+                postRepository.save(newPost);
             }
+        }
     }
-
-
-
 }
