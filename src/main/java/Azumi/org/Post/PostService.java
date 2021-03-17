@@ -36,7 +36,7 @@ public class PostService {
     public ResponseEntity displayPostsByTitle(@PathVariable("postTitle") String postTitle) throws JsonProcessingException {
         List<Post> byPostTitle = postRepository.findByPostTitle(postTitle);
         if (byPostTitle.isEmpty())
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
         else
             return ResponseEntity.ok(objectMapper.writeValueAsString(byPostTitle));
     }
@@ -95,16 +95,17 @@ public class PostService {
     @DeleteMapping("/posts/{id}")
     public ResponseEntity deletePost(@PathVariable("id") int idPost, @RequestHeader("userid") int userId) {
         Optional<Post> postById = postRepository.findByPostId(idPost);
-        if (postById.get().getUserId() == userId) {
-            postRepository.delete(postById.get());
-            logsRepository.save(new Logs(postById.get().getUserId(), postById.get().getPostId(), "DELETE POST"));
-            return ResponseEntity.ok().build();
-        } else
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-
+        if(postById.isPresent()) {
+            if (postById.get().getUserId() == userId) {
+                postRepository.delete(postById.get());
+                logsRepository.save(new Logs(postById.get().getUserId(), postById.get().getPostId(), "DELETE POST"));
+                return ResponseEntity.ok().build();
+            } else
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        else
+            return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     }
-
-
 
     // automatic update DB at 20:00
     @Scheduled(cron = "0 0 20 * * *")
