@@ -8,9 +8,7 @@ import javax.persistence.*;
 @Table(name = "logs")
 @Getter
 @Setter
-@ToString
 @NoArgsConstructor
-@AllArgsConstructor
 @RequiredArgsConstructor
 public class Logs {
 
@@ -22,7 +20,6 @@ public class Logs {
     private int userId;
 
     @NonNull
-    @Column(name = "post_id")
     private int postId;
 
     @NonNull

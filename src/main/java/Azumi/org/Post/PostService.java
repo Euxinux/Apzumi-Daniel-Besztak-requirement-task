@@ -10,7 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 import java.util.Optional;
 
@@ -23,17 +23,17 @@ public class PostService {
     PostRepository postRepository;
     @Autowired
     LogsRepository logsRepository;
+    @Autowired
+    DownloadFromURLApi json;
 
     // display all posts
-    @GetMapping("/posts")
     public ResponseEntity displayPostsId() throws JsonProcessingException {
         List<Post> allPosts = postRepository.findAll();
         return ResponseEntity.ok(objectMapper.writeValueAsString(allPosts));
     }
 
     // display posts by title
-    @GetMapping("/posts/{postTitle}")
-    public ResponseEntity displayPostsByTitle(@PathVariable("postTitle") String postTitle) throws JsonProcessingException {
+    public ResponseEntity displayPostsByTitle(String postTitle) throws JsonProcessingException {
         List<Post> byPostTitle = postRepository.findByPostTitle(postTitle);
         if (byPostTitle.isEmpty())
             return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
@@ -42,16 +42,13 @@ public class PostService {
     }
 
     // display all without author id
-    @GetMapping("/posts/withoutId")
     public ResponseEntity displayPostsWithoutId() throws JsonProcessingException {
         List<PostsProjections> allPosts = postRepository.findAllPosts();
         return ResponseEntity.ok(objectMapper.writeValueAsString(allPosts));
     }
 
     // edit posts Title by author
-    @PutMapping("/posts/title/{id}")
-    public ResponseEntity editPostTitle(@RequestBody String newTitle, @PathVariable("id") int idPost,
-                                        @RequestHeader("userid") int userId) throws JsonProcessingException {
+    public ResponseEntity editPostTitle(String newTitle,int idPost, int userId) throws JsonProcessingException {
         Optional<Post> postById = postRepository.findByPostId(idPost);
 
         if (postById.get().getUserId() == userId) {
@@ -67,9 +64,7 @@ public class PostService {
     }
 
     //edit postBody by author
-    @PutMapping("/posts/body/{id}")
-    public ResponseEntity editPostBody(@RequestBody String newBody, @PathVariable("id") int idPost,
-                                       @RequestHeader("userid") int userId) throws JsonProcessingException {
+    public ResponseEntity editPostBody(String newBody,int idPost, int userId) throws JsonProcessingException {
         Optional<Post> postById = postRepository.findByPostId(idPost);
 
         if (postById.get().getUserId() == userId) {
@@ -85,15 +80,13 @@ public class PostService {
     }
 
     // update DB
-    @PutMapping("/rest")
     public ResponseEntity update() {
         period();
         return ResponseEntity.ok().build();
     }
 
     // delete post by author
-    @DeleteMapping("/posts/{id}")
-    public ResponseEntity deletePost(@PathVariable("id") int idPost, @RequestHeader("userid") int userId) {
+    public ResponseEntity deletePost(int idPost,int userId) {
         Optional<Post> postById = postRepository.findByPostId(idPost);
         if(postById.isPresent()) {
             if (postById.get().getUserId() == userId) {
@@ -110,7 +103,6 @@ public class PostService {
     // automatic update DB at 20:00
     @Scheduled(cron = "0 0 20 * * *")
     public void period()    {
-        DownloadFromURLApi json = new DownloadFromURLApi();
         StringBuffer sb = json.updateDB();
         JSONArray posts = new JSONArray(sb.toString());
         for (int i = 0; i < posts.length(); i++) {

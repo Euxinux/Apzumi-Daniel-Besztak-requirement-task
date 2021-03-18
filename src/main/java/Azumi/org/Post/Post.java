@@ -1,15 +1,17 @@
 package Azumi.org.Post;
 import lombok.*;
+import org.springframework.beans.factory.annotation.Autowired;
+
 import javax.persistence.*;
+
 @Entity
 @Table(name = "posts")
 @Getter
 @Setter
-@ToString
 @NoArgsConstructor
 @AllArgsConstructor
-@RequiredArgsConstructor
 public class Post {
+
     @NonNull
     @Column(name = "id_user")
     private int userId;
