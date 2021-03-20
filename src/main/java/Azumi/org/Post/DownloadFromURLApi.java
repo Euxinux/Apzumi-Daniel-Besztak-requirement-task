@@ -2,7 +2,6 @@ package Azumi.org.Post;
 
 import lombok.extern.java.Log;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -11,11 +10,9 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.util.Properties;
 
 @Component
 @Slf4j
-@Log
 public class DownloadFromURLApi {
 
     @Value( "${URL.API}" )
