@@ -9,8 +9,14 @@ import javax.persistence.*;
 @Getter
 @Setter
 @NoArgsConstructor
-@AllArgsConstructor
 public class Post {
+    @Autowired
+    public Post(@NonNull int userId, int postId, @NonNull String postTitle, @NonNull String postBody) {
+        this.userId = userId;
+        this.postId = postId;
+        this.postTitle = postTitle;
+        this.postBody = postBody;
+    }
 
     @NonNull
     @Column(name = "id_user")

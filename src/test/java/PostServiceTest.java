@@ -1,10 +1,14 @@
-import Azumi.org.Post.Post;
+
 import org.junit.Test;
-import java.util.List;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
+
 import static io.restassured.RestAssured.given;
 
+
+
 public class PostServiceTest {
-    List<Post> postList;
 
     @Test
     public void displayAllPostStatusCode200() {

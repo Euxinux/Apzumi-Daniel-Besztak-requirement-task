@@ -78,7 +78,6 @@ public class PostService {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
     }
-
     // update DB
     public ResponseEntity update() {
         period();
